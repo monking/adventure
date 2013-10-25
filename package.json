@@ -1,0 +1,11 @@
+{
+  "name":"toTheCoast",
+  "version":"0.1.0",
+  "devDependencies":{
+    "grunt":"",
+    "grunt-contrib-coffee":"",
+    "grunt-contrib-watch":"",
+    "grunt-contrib-uglify":"",
+    "matchdep":""
+  }
+}
