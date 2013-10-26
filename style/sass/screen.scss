@@ -19,13 +19,20 @@
   max-width:600px;
   font-family:monospace;
   color:#666;
-  padding:1em;
+  padding:1em 0;
   margin:0 auto;
 
   li {
     list-style:none;
     line-height:1.3em;
     min-height:1.3em;
+    padding:0 1em;
+    background-color:#eee;
+    overflow:hidden;
+
+    &.new {
+      background-color:transparent
+    }
 
     &[contenteditable] {
       outline:none;

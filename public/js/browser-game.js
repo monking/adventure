@@ -1461,6 +1461,7 @@ if (typeof exports === 'object') {
       var li, log;
       log = document.getElementById("log");
       li = document.createElement("li");
+      li.className = "new";
       li.innerHTML = marked(markdown);
       return log.appendChild(li);
     };
@@ -1469,13 +1470,19 @@ if (typeof exports === 'object') {
       var field, log;
       log = document.getElementById("log");
       field = document.createElement("li");
+      field.className = "new";
       field.setAttribute("contenteditable", "true");
       log.appendChild(field);
       field.onkeydown = function(event) {
+        var li, newLI;
         if (event.keyCode === 13) {
           event.preventDefault();
           this.innerHTML = "> " + this.innerHTML;
           this.removeAttribute("contenteditable");
+          newLI = document.getElementsByClassName("new");
+          while (li = newLI[0]) {
+            li.className = li.className.replace(/(^| )new( |$)/, "");
+          }
           return callback(this.innerHTML);
         }
       };

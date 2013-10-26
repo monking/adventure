@@ -28,7 +28,7 @@
   max-width: 600px;
   font-family: monospace;
   color: #666;
-  padding: 1em;
+  padding: 1em 0;
   margin: 0 auto;
 }
 /* line 25, ../../style/sass/screen.scss */
@@ -36,12 +36,19 @@
   list-style: none;
   line-height: 1.3em;
   min-height: 1.3em;
+  padding: 0 1em;
+  background-color: #eee;
+  overflow: hidden;
 }
-/* line 30, ../../style/sass/screen.scss */
+/* line 33, ../../style/sass/screen.scss */
+#log li.new {
+  background-color: transparent;
+}
+/* line 37, ../../style/sass/screen.scss */
 #log li[contenteditable] {
   outline: none;
 }
-/* line 32, ../../style/sass/screen.scss */
+/* line 39, ../../style/sass/screen.scss */
 #log li[contenteditable]:before {
   content: "> ";
   text-decoration: blink;
