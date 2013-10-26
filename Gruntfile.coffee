@@ -10,19 +10,34 @@ module.exports = (grunt) ->
         options:
           join: true
         files:
-          "public/js/game.js": [
+          "public/js/node-game.js": [
             "src/adventure.litcoffee"
             "src/story.litcoffee"
+            "src/node-story.litcoffee"
+          ]
+          "public/js/browser-game.js": [
+            "src/adventure.litcoffee"
+            "src/story.litcoffee"
+            "src/browser-story.litcoffee"
           ]
     uglify:
       min:
         files:
-          "public/js/game.js": ["public/js/game.js"]
+          "public/js/node-game.js": ["public/js/node-game.js"]
+          "public/js/browser-game.js": ["public/js/browser-game.js"]
+    compass:
+      default:
+        options:
+          sassDir: "style/sass"
+          cssDir: "public/css"
     watch:
       options:
         livereload: true
       scripts:
         files: ["src/*"]
         tasks: ["coffee", "uglify"]
+      styles:
+        files: ["style/sass/*"]
+        tasks: ["compass"]
 
-  grunt.registerTask "default", ["watch"]
+  grunt.registerTask "default", ["coffee", "compass", "watch"]

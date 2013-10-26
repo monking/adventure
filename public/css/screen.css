@@ -1,0 +1,15 @@
+/* line 1, ../../style/sass/screen.scss */
+#log {
+  width: 100%;
+  max-width: 600px;
+  font-family: monospace;
+  color: #666;
+}
+/* line 7, ../../style/sass/screen.scss */
+#log li {
+  border-bottom: 1px solid #999;
+}
+/* line 10, ../../style/sass/screen.scss */
+#log li[editable]:before {
+  content: ":";
+}

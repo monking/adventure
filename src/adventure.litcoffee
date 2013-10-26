@@ -17,8 +17,7 @@
           back: null
 
       narrate: (statement) ->
-        process.stdin.resume()
-        process.stdout.write "#{statement}\n"
+        console.log statement
 
       act: (statement) ->
         actionFound = false

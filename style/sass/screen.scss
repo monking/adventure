@@ -1,0 +1,14 @@
+#log {
+  width:100%;
+  max-width:600px;
+  font-family:monospace;
+  color:#666;
+
+  li {
+    border-bottom:1px solid #999;
+
+    &[editable]:before {
+      content:":";
+    }
+  }
+}
