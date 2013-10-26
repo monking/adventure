@@ -22,6 +22,7 @@
         @scene = null
         @state = "breathing"
         @inventory = {}
+        @go @firstScene
 
       narrate: (statement) ->
         @interface.print statement
@@ -36,6 +37,7 @@
             self.act(input) or self.prompt("")
 
       act: (statement) ->
+        self = @
         actionFound = false
         if @state is "dead"
           @prompt """
@@ -48,9 +50,9 @@
                 self.act answer
           actionFound = true
         else
-          for act, pattern of @actions
-            if match = statement.match pattern
-              @["action#{act}"](match)
+          for name, act of @actions
+            if match = statement.match act.pattern
+              act.deed.apply @, [match]
               actionFound = true
 
         actionFound
@@ -71,7 +73,7 @@
             @history.back = @history.at
             @history.at = sceneName
             @scene = @scenes[sceneName]
-            @scene.event(@)?
+            @scene.event.call(@)?
             @prompt @scene.describe(@haveBeen())
             @history.been[sceneName] = true
           else

@@ -1165,7 +1165,7 @@ if (typeof exports === 'object') {
 }());
 
 (function() {
-  var Adventure, BrowserInterface, Character, Item, Scene, Story,
+  var Adventure, BrowserInterface, Character, Item, Scene, Story, _ref,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -1183,7 +1183,8 @@ if (typeof exports === 'object') {
       };
       this.scene = null;
       this.state = "breathing";
-      return this.inventory = {};
+      this.inventory = {};
+      return this.go(this.firstScene);
     };
 
     Adventure.prototype.narrate = function(statement) {
@@ -1206,7 +1207,8 @@ if (typeof exports === 'object') {
     };
 
     Adventure.prototype.act = function(statement) {
-      var act, actionFound, match, pattern, _ref;
+      var act, actionFound, match, name, self, _ref;
+      self = this;
       actionFound = false;
       if (this.state === "dead") {
         this.prompt("You're still dead. Continue from the beginning? (Say \"yes\")", function(answer) {
@@ -1219,10 +1221,10 @@ if (typeof exports === 'object') {
         actionFound = true;
       } else {
         _ref = this.actions;
-        for (act in _ref) {
-          pattern = _ref[act];
-          if (match = statement.match(pattern)) {
-            this["action" + act](match);
+        for (name in _ref) {
+          act = _ref[name];
+          if (match = statement.match(act.pattern)) {
+            act.deed.apply(this, [match]);
             actionFound = true;
           }
         }
@@ -1254,7 +1256,7 @@ if (typeof exports === 'object') {
           this.history.back = this.history.at;
           this.history.at = sceneName;
           this.scene = this.scenes[sceneName];
-          this.scene.event(this) != null;
+          this.scene.event.call(this) != null;
           this.prompt(this.scene.describe(this.haveBeen()));
           return this.history.been[sceneName] = true;
         } else {
@@ -1335,116 +1337,117 @@ if (typeof exports === 'object') {
   Story = (function(_super) {
     __extends(Story, _super);
 
-    function Story(options) {
-      this.scenes = {
-        "car 1": new Scene({
-          description: "You are in **car 1**, just behind the locomotive engine.\n\nHuh. The scent is _weaker_ here. You would have thought, closer\nto the engine...",
-          exits: ["car 2", "the tracks"]
-        }),
-        "car 2": new Scene({
-          intro: "In all the times that you've taken the train to the coast,\nyou've never noticed the smell of the train car before. It's not\nunpleasant now, but it's all you can think about: cigarettes,\ndisinfectant, and mechanical grease, like a motel set on top of\nan engine block.\n\nThere's another scent in there, now that you notice, that you\ncan't name right away. A vaguely dangerous, sharp note hanging in\nthe background. You've gradually sunk into your seat until you're\nactually quite uncomfortable, so you decide to get up and\nexplore.",
-          description: "You are in **car 2**, and the strange scent is barely perceptible\nhere.",
-          exits: ["car 1", "car 3", "the tracks"]
-        }),
-        "car 3": new Scene({
-          description: "You are in **car 3**. The smell is quite noticable here, and reminds\nyou of fireworks.",
-          exits: ["car 2", "room 1", "the tracks"]
-        }),
-        "room 1": new Scene({
-          description: "This story's *going somewhere*, I promise.",
-          exits: ["car 3", "window"]
-        }),
-        "the tracks": new Scene({
-          description: "***What are you thinking?*** This is a *moving train*.\n\nYou step out onto the tracks as if you were alighting at the\nstation, but a sleeper snags your shoe at 70MPH and you are\ncrushed and variously destroyed by the train, which is\ndisappearing into the distance without most of you.",
-          event: function(adventure) {
-            return adventure.state = "dead";
-          }
-        }),
-        "window": new Scene({
-          description: "***!?***\n\nOkay. You just ***leapt out of the window***. About half a\nheartbeat after your foot leaves the coping, your spinal cord\ninsists that you *grab something*, something firmly anchored to\nthe ground, far from gnashing teeth and rocky ballast.\n\nBut there is nothing to grab but the fluid air, and your ego\ncalmly watches as your id scrambles to survive. I don't hope to\never learn what you wanted to *achieve* by this. ***You are\ndead***.",
-          event: function(adventure) {
-            return adventure.state = "dead";
-          }
-        })
-      };
-      this.cast = {
-        "cat": new Character({
-          name: "Moonbeam"
-        }),
-        "monkey": new Character({
-          name: "Monkey"
-        })
-      };
-      this.inventory = {
-        "wrench": new Item({
-          name: "wrench"
-        })
-      };
-      this.actions = {
-        Help: /help/i,
-        Look: /where(( am i| are we)\??)?|look( at( the)?)?( (.*))?/i,
-        PickUp: /pick up( ([0-9]+|the|a|some|an|all))? (.*)/i,
-        Go: /go( (to( the)?))? (.*)\.?/i,
-        Use: /use (.*?)(( (with|on) )?(.*))/i,
-        Restart: /restart/i,
-        Say: /say (.*)/i
-      };
-      Story.__super__.constructor.call(this, options);
+    function Story() {
+      _ref = Story.__super__.constructor.apply(this, arguments);
+      return _ref;
     }
 
-    Story.prototype.start = function() {
-      Story.__super__.start.call(this);
-      return this.go("car 2");
+    Story.prototype.firstScene = "car 2";
+
+    Story.prototype.scenes = {
+      "car 1": new Scene({
+        description: "You are in **car 1**, just behind the locomotive engine.\n\nHuh. The scent is _weaker_ here. You would have thought, closer\nto the engine...",
+        exits: ["car 2", "the tracks"]
+      }),
+      "car 2": new Scene({
+        intro: "In all the times that you've taken the train to the coast,\nyou've never noticed the smell of the train car before. It's not\nunpleasant now, but it's all you can think about: cigarettes,\ndisinfectant, and mechanical grease, like a motel set on top of\nan engine block.\n\nThere's another scent in there, now that you notice, that you\ncan't name right away. A vaguely dangerous, sharp note hanging in\nthe background. You've gradually sunk into your seat until you're\nactually quite uncomfortable, so you decide to get up and\nexplore.",
+        description: "You are in **car 2**, and the strange scent is barely perceptible\nhere.",
+        exits: ["car 1", "car 3", "the tracks"]
+      }),
+      "car 3": new Scene({
+        description: "You are in **car 3**. The smell is quite noticable here, and reminds\nyou of fireworks.",
+        exits: ["car 2", "room 1", "the tracks"]
+      }),
+      "room 1": new Scene({
+        description: "This story's *going somewhere*, I promise.",
+        exits: ["car 3", "window"]
+      }),
+      "the tracks": new Scene({
+        description: "***What are you thinking?*** This is a *moving train*.\n\nYou step out onto the tracks as if you were alighting at the\nstation, but a sleeper snags your shoe at 70MPH and you are\ncrushed and variously destroyed by the train, which is\ndisappearing into the distance without most of you.",
+        event: function() {
+          return this.state = "dead";
+        }
+      }),
+      "window": new Scene({
+        description: "***!?***\n\nOkay. You just ***leapt out of the window***. About half a\nheartbeat after your foot leaves the coping, your spinal cord\ninsists that you *grab something*, something firmly anchored to\nthe ground, far from gnashing teeth and rocky ballast.\n\nBut there is nothing to grab but the fluid air, and your ego\ncalmly watches as your id scrambles to survive. I don't hope to\never learn what you wanted to *achieve* by this. ***You are\ndead***.",
+        event: function() {
+          return this.state = "dead";
+        }
+      })
     };
 
-    Story.prototype.act = function(statement) {
-      if (this.state !== "dead") {
-        return Story.__super__.act.call(this, statement);
-      } else {
-        return this.actionHelp();
+    Story.prototype.cast = {
+      "cat": new Character({
+        name: "Moonbeam"
+      }),
+      "monkey": new Character({
+        name: "Monkey"
+      })
+    };
+
+    Story.prototype.inventory = {
+      "wrench": new Item({
+        name: "wrench"
+      })
+    };
+
+    Story.prototype.actions = {
+      help: {
+        pattern: /help/i,
+        deed: function(match) {
+          this.narrate("Commands are 'go', 'pick up', 'use', 'look', and 'help'");
+          return this.prompt(this.scene.describe(this.haveBeen()));
+        }
+      },
+      look: {
+        pattern: /where(( am i| are we)\??)?|look( at( the)?)?( (.*))?/i,
+        deed: function(match) {
+          if (match[6] != null) {
+            return this.prompt("You look right at " + match[6]);
+          } else {
+            return this.prompt(this.scene.describe(this.haveBeen()));
+          }
+        }
+      },
+      pickUp: {
+        pattern: /pick up( ([0-9]+|the|a|some|an|all))? (.*)/i,
+        deed: function(match) {
+          var article, object;
+          article = match[2] || "the";
+          object = match[3];
+          return this.prompt("You pick up " + article + " " + object + ".");
+        }
+      },
+      go: {
+        pattern: /go( (to( the)?))? (.*)\.?/i,
+        deed: function(match) {
+          return this.go(match[4]);
+        }
+      },
+      use: {
+        pattern: /use (.*?)(( (with|on) )?(.*))/i,
+        deed: function(match) {
+          var object, target;
+          object = match[1] ? match[1] : match[5];
+          if (match[1]) {
+            target = match[5];
+          }
+          this.use(object, target);
+          return this.prompt();
+        }
+      },
+      restart: {
+        pattern: /restart/i,
+        deed: function() {
+          return this.start();
+        }
+      },
+      say: {
+        pattern: /say (.*)/i,
+        deed: function(match) {
+          return this.prompt("\"" + match[1] + "\"");
+        }
       }
-    };
-
-    Story.prototype.actionUse = function(match) {
-      var object, target;
-      object = match[1] ? match[1] : match[5];
-      if (match[1]) {
-        target = match[5];
-      }
-      this.use(object, target);
-      return this.prompt();
-    };
-
-    Story.prototype.actionGo = function(match) {
-      return this.go(match[4]);
-    };
-
-    Story.prototype.actionHelp = function(match) {
-      this.narrate("Commands are 'go', 'pick up', 'use', 'look', and 'help'");
-      return this.prompt(this.scene.describe(this.haveBeen()));
-    };
-
-    Story.prototype.actionLook = function(match) {
-      if (match[6] != null) {
-        return this.prompt("You look right at " + match[6]);
-      } else {
-        return this.prompt(this.scene.describe(this.haveBeen()));
-      }
-    };
-
-    Story.prototype.actionPickUp = function(match) {
-      var article, object;
-      article = match[2] || "the";
-      object = match[3];
-      return this.prompt("You pick up " + article + " " + object + ".");
-    };
-
-    Story.prototype.actionSay = function(match) {
-      return this.prompt("\"" + match[1] + "\"");
-    };
-
-    Story.prototype.actionRestart = function() {
-      return this.start();
     };
 
     return Story;
