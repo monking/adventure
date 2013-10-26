@@ -10,14 +10,30 @@
 # Let's get started!
 
     class Adventure
-      constructor: () ->
+      constructor: (options) ->
+        @interface = options.interface
+        @start()
+
+      start: () ->
         @history =
           been: {}
           at: null
           back: null
+        @scene = null
+        @state = "breathing"
+        @inventory = {}
 
       narrate: (statement) ->
-        console.log statement
+        @interface.print statement
+
+      prompt: (statement, callback) ->
+        self = @
+        @narrate "#{statement}\n"
+        @interface.read (input) ->
+          if callback?
+            callback input
+          else
+            self.act(input) or self.prompt("")
 
       act: (statement) ->
         actionFound = false
@@ -31,7 +47,7 @@
       go: (sceneName) ->
         sceneName = @history.back if sceneName is "back"
         pattern = new RegExp sceneName, "i"
-        if not @scene? or pattern.test @scene.exits.toString()
+        if not @scene? or (@scene.exits? and pattern.test @scene.exits.toString())
           sceneMatchCount = 0
           if not @scene?
             sceneMatchCount = 1
@@ -44,7 +60,8 @@
             @history.back = @history.at
             @history.at = sceneName
             @scene = @scenes[sceneName]
-            @scene.describe()
+            @scene.event(@)?
+            @prompt @scene.describe(@haveBeen())
             @history.been[sceneName] = true
           else
             @prompt "Can you be more specific?"
@@ -55,25 +72,21 @@
         sceneName = @history.at if not sceneName?
         @history.been[sceneName]?
 
-      prompt: (statement) ->
-        self = @
-        @narrate "#{statement}\n"
-        process.stdout.write ":"
-        process.stdin.once "data", (data) ->
-          self.act(data.toString().trim()) or self.prompt("")
 
     class Scene
-      constructor: (@adventure, options) ->
+      constructor: (options) ->
         @intro = options.intro
         @description = options.description
         @exits = options.exits
+        @event = options.event or () -> null
 
-      describe: () ->
-        if @intro? and not @adventure.haveBeen()
-          @adventure.narrate "\n#{@intro}"
+      describe: (been = false) ->
+        if @intro? and not been
+          output = "\n#{@intro}"
         else
-          @adventure.narrate "\n#{@description}"
-        @adventure.prompt "\nExits are #{@exits.join ", "}." if @exits?
+          output = "\n#{@description}"
+        output += "\n\nExits are **#{@exits.join "**, **"}**." if @exits?
+        output
 
     class Item
       constructor: (options) ->

@@ -28,24 +28,20 @@
   max-width: 600px;
   font-family: monospace;
   color: #666;
-}
-/* line 23, ../../style/sass/screen.scss */
-#log ul {
-  padding: 0;
+  padding: 1em;
   margin: 0 auto;
 }
-/* line 27, ../../style/sass/screen.scss */
+/* line 25, ../../style/sass/screen.scss */
 #log li {
   list-style: none;
-  white-space: pre;
   line-height: 1.3em;
   min-height: 1.3em;
 }
-/* line 33, ../../style/sass/screen.scss */
+/* line 30, ../../style/sass/screen.scss */
 #log li[contenteditable] {
   outline: none;
 }
-/* line 35, ../../style/sass/screen.scss */
+/* line 32, ../../style/sass/screen.scss */
 #log li[contenteditable]:before {
   content: "> ";
   text-decoration: blink;

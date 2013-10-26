@@ -1,14 +1,14 @@
 # an interface to play the game in the command line
 
-    class NodeStory extends Story
-      narrate: (statement) ->
+    class NodeInterface
+      print: (string) ->
         process.stdin.resume()
-        process.stdout.write "#{statement}\n"
-      prompt: (statement) ->
-        self = @
-        @narrate "#{statement}\n"
-        process.stdout.write ":"
+        process.stdout.write "#{string}\n"
+      read: (callback) ->
+        process.stdout.write "> "
         process.stdin.once "data", (data) ->
-          self.act(data.toString().trim()) or self.prompt("")
+          callback data.toString().trim()
 
-    new NodeStory()
+    new Story {
+      interface: new NodeInterface
+    }

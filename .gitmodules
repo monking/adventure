@@ -1,0 +1,3 @@
+[submodule "src/lib/marked"]
+	path = src/lib/marked
+	url = git@github.com:chjj/marked.git

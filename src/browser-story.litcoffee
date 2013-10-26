@@ -1,14 +1,12 @@
-# This is the browser version of the app
+# an interface to play the game in the browser
 
-    class BrowserStory extends Story
-      narrate: (statement) ->
+    class BrowserInterface
+      print: (markdown) ->
         log = document.getElementById "log"
         li = document.createElement "li"
-        li.appendChild document.createTextNode(statement)
+        li.innerHTML = marked markdown
         log.appendChild li
-      prompt: (statement) ->
-        adventure = @
-        @narrate statement
+      read: (callback) ->
         log = document.getElementById "log"
         field = document.createElement "li"
         field.setAttribute "contenteditable", "true"
@@ -18,8 +16,10 @@
             event.preventDefault()
             @innerHTML = "> #{@innerHTML}"
             @removeAttribute "contenteditable"
-            adventure.act(@innerHTML) or adventure.prompt ""
+            callback @innerHTML
         field.focus()
 
     window.onload = () ->
-      new BrowserStory()
+      new Story {
+        interface: new BrowserInterface
+      }

@@ -24,7 +24,7 @@ module.exports = (grunt) ->
       min:
         files:
           "public/js/node-game.js": ["public/js/node-game.js"]
-          "public/js/browser-game.js": ["public/js/browser-game.js"]
+          "public/js/browser-game.js": ["src/lib/marked/lib/marked.js","public/js/browser-game.js"]
     compass:
       default:
         options:
@@ -35,9 +35,9 @@ module.exports = (grunt) ->
         livereload: true
       scripts:
         files: ["src/*"]
-        tasks: ["coffee"]
+        tasks: ["coffee","uglify"]
       styles:
         files: ["style/sass/*"]
         tasks: ["compass"]
 
-  grunt.registerTask "default", ["coffee", "compass", "watch"]
+  grunt.registerTask "default", ["coffee", "uglify", "compass", "watch"]
