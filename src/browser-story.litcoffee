@@ -1,22 +1,25 @@
-# This is the browser version of the app
+# an interface to play the game in the browser
 
-    class BrowserStory extends Story
-      narrate: (statement) ->
+    class BrowserInterface
+      print: (markdown) ->
         log = document.getElementById "log"
         li = document.createElement "li"
-        li.appendChild document.createTextNode(statement)
+        li.innerHTML = marked markdown
         log.appendChild li
-      prompt: (statement) ->
-        adventure = @
-        @narrate statement
+      read: (callback) ->
         log = document.getElementById "log"
         field = document.createElement "li"
-        field.className = "entry"
-        field.attributes.editable = true
+        field.setAttribute "contenteditable", "true"
         log.appendChild field
-        log.onkeydown = (event) ->
+        field.onkeydown = (event) ->
           if event.keyCode is 13 # <ENTER>
-            @removeAttribute "editable"
-            adventure.act @innerHTML
+            event.preventDefault()
+            @innerHTML = "> #{@innerHTML}"
+            @removeAttribute "contenteditable"
+            callback @innerHTML
+        field.focus()
 
-    new BrowserStory()
+    window.onload = () ->
+      new Story {
+        interface: new BrowserInterface
+      }
