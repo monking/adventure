@@ -89,12 +89,13 @@
           "wrench": new Item
             name: "wrench"
         @actions =
-          Help: /help/i
-          Look: /where(( am i| are we)\??)?|look( at( the)?)?( (.*))?/i
-          PickUp: /pick up( (the|a|some|an|all))? (.*)/i
-          Go: /go( (to( the)?))? (.*)\.?/i
-          Use: /use (.*?)( (with|on) (.*))?/i
-          Restart: /restart/i
+          Help    : /help/i
+          Look    : /where(( am i| are we)\??)?|look( at( the)?)?( (.*))?/i
+          PickUp  : /pick up( ([0-9]+|the|a|some|an|all))? (.*)/i
+          Go      : /go( (to( the)?))? (.*)\.?/i
+          Use     : /use (.*?)(( (with|on) )?(.*))/i
+          Restart : /restart/i
+          Say     : /say (.*)/i
 
         super(options)
 
@@ -102,44 +103,38 @@
         super()
         @go("car 2")
 
-      actionUse: (match) ->
-        if @state  != "dead"
-          @narrate "somehow you expect to affect #{match[4]} by using #{match[1]}"
-
-      actionGo: (match) ->
+      act: (statement) ->
         if @state != "dead"
-          @go match[4]
-
-      actionHelp: (match) ->
-        self = @
-        if @state != "dead"
-          @narrate "Commands are 'go', 'pick up', 'use', 'look', and 'help'"
-          @prompt @scene.describe(@haveBeen())
-        else
-          @prompt """
-            You're still dead. Continue from the beginning? (Say "yes")
-            """,
-            (answer) ->
-              if /yes/i.test answer
-                self.start()
-              else
-                self.act answer
-
-      actionLook: (match) ->
-        if @state != "dead"
-          if match[6]?
-            @prompt "You look right at #{match[6]}"
-          else
-            @prompt @scene.describe(@haveBeen())
+          super(statement)
         else
           @actionHelp()
 
+      actionUse: (match) ->
+        object = if match[1] then match[1] else match[5]
+        target = match[5] if match[1]
+        @use object, target
+        @prompt()
+
+      actionGo: (match) ->
+        @go match[4]
+
+      actionHelp: (match) ->
+        @narrate "Commands are 'go', 'pick up', 'use', 'look', and 'help'"
+        @prompt @scene.describe(@haveBeen())
+
+      actionLook: (match) ->
+        if match[6]?
+          @prompt "You look right at #{match[6]}"
+        else
+          @prompt @scene.describe(@haveBeen())
+
       actionPickUp: (match) ->
-        if @state != "dead"
-          article = match[2] or "the"
-          object = match[3]
-          @narrate "You pick up #{article} #{object}."
-          @prompt("")
+        article = match[2] or "the"
+        object = match[3]
+        @prompt "You pick up #{article} #{object}."
+
+      actionSay: (match) ->
+        @prompt "\"#{match[1]}\""
 
       actionRestart: () ->
         @start()

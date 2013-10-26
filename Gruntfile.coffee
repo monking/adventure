@@ -13,13 +13,17 @@ module.exports = (grunt) ->
           "public/js/node-game.js": [
             "src/adventure.litcoffee"
             "src/story.litcoffee"
-            "src/node-story.litcoffee"
+            "src/node-interface.litcoffee"
           ]
           "public/js/browser-game.js": [
             "src/adventure.litcoffee"
             "src/story.litcoffee"
-            "src/browser-story.litcoffee"
+            "src/browser-interface.litcoffee"
           ]
+    concat:
+      default:
+        files:
+          "public/js/browser-game.js": ["src/lib/marked/lib/marked.js","public/js/browser-game.js"]
     uglify:
       min:
         files:
@@ -35,9 +39,10 @@ module.exports = (grunt) ->
         livereload: true
       scripts:
         files: ["src/*"]
-        tasks: ["coffee","uglify"]
+        tasks: ["coffee","concat"]
       styles:
         files: ["style/sass/*"]
         tasks: ["compass"]
 
   grunt.registerTask "default", ["coffee", "uglify", "compass", "watch"]
+  grunt.registerTask "dev", ["coffee", "concat", "compass", "watch"]

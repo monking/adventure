@@ -28,7 +28,7 @@
 
       prompt: (statement, callback) ->
         self = @
-        @narrate "#{statement}\n"
+        @narrate "#{statement}\n" if statement?
         @interface.read (input) ->
           if callback?
             callback input
@@ -37,10 +37,21 @@
 
       act: (statement) ->
         actionFound = false
-        for act, pattern of @actions
-          if match = statement.match pattern
-            @["action#{act}"](match)
-            actionFound = true
+        if @state is "dead"
+          @prompt """
+            You're still dead. Continue from the beginning? (Say "yes")
+            """,
+            (answer) ->
+              if /yes/i.test answer
+                self.start()
+              else
+                self.act answer
+          actionFound = true
+        else
+          for act, pattern of @actions
+            if match = statement.match pattern
+              @["action#{act}"](match)
+              actionFound = true
 
         actionFound
 
@@ -67,6 +78,12 @@
             @prompt "Can you be more specific?"
         else
           @prompt "You can't go there from here."
+
+      use: (object, target) ->
+        if target?
+          @narrate "You use the #{object} on #{target}"
+        else
+          @narrate "You use the #{object}"
 
       haveBeen: (sceneName) ->
         sceneName = @history.at if not sceneName?
