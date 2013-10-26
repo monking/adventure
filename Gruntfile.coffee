@@ -35,7 +35,7 @@ module.exports = (grunt) ->
         livereload: true
       scripts:
         files: ["src/*"]
-        tasks: ["coffee", "uglify"]
+        tasks: ["coffee"]
       styles:
         files: ["style/sass/*"]
         tasks: ["compass"]

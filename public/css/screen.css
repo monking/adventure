@@ -1,15 +1,60 @@
-/* line 1, ../../style/sass/screen.scss */
+@-webkit-keyframes blinker {
+  /* line 1, ../../style/sass/screen.scss */
+  from {
+    opacity: 1.0;
+  }
+
+  /* line 1, ../../style/sass/screen.scss */
+  to {
+    opacity: 0.0;
+  }
+}
+
+@keyframes blinker {
+  /* line 2, ../../style/sass/screen.scss */
+  from {
+    opacity: 1.0;
+  }
+
+  /* line 2, ../../style/sass/screen.scss */
+  to {
+    opacity: 0.0;
+  }
+}
+
+/* line 17, ../../style/sass/screen.scss */
 #log {
   width: 100%;
   max-width: 600px;
   font-family: monospace;
   color: #666;
 }
-/* line 7, ../../style/sass/screen.scss */
-#log li {
-  border-bottom: 1px solid #999;
+/* line 23, ../../style/sass/screen.scss */
+#log ul {
+  padding: 0;
+  margin: 0 auto;
 }
-/* line 10, ../../style/sass/screen.scss */
-#log li[editable]:before {
-  content: ":";
+/* line 27, ../../style/sass/screen.scss */
+#log li {
+  list-style: none;
+  white-space: pre;
+  line-height: 1.3em;
+  min-height: 1.3em;
+}
+/* line 33, ../../style/sass/screen.scss */
+#log li[contenteditable] {
+  outline: none;
+}
+/* line 35, ../../style/sass/screen.scss */
+#log li[contenteditable]:before {
+  content: "> ";
+  text-decoration: blink;
+  -webkit-animation-name: blinker;
+  animation-name: blinker;
+  -webkit-animation-iteration-count: infinite;
+  animation-iteration-count: infinite;
+  -webkit-animation-timing-function: cubic-bezier(1, 0, 0, 1);
+  animation-timing-function: cubic-bezier(1, 0, 0, 1);
+  -webkit-animation-duration: 1s;
+  animation-duration: 1s;
 }

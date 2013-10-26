@@ -230,21 +230,25 @@
       this.narrate(statement);
       log = document.getElementById("log");
       field = document.createElement("li");
-      field.className = "entry";
-      field.attributes.editable = true;
+      field.setAttribute("contenteditable", "true");
       log.appendChild(field);
-      return log.onkeydown = function(event) {
+      field.onkeydown = function(event) {
         if (event.keyCode === 13) {
-          this.removeAttribute("editable");
-          return adventure.act(this.innerHTML);
+          event.preventDefault();
+          this.innerHTML = "> " + this.innerHTML;
+          this.removeAttribute("contenteditable");
+          return adventure.act(this.innerHTML) || adventure.prompt("");
         }
       };
+      return field.focus();
     };
 
     return BrowserStory;
 
   })(Story);
 
-  new BrowserStory();
+  window.onload = function() {
+    return new BrowserStory();
+  };
 
 }).call(this);

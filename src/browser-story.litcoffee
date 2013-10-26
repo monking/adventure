@@ -11,12 +11,15 @@
         @narrate statement
         log = document.getElementById "log"
         field = document.createElement "li"
-        field.className = "entry"
-        field.attributes.editable = true
+        field.setAttribute "contenteditable", "true"
         log.appendChild field
-        log.onkeydown = (event) ->
+        field.onkeydown = (event) ->
           if event.keyCode is 13 # <ENTER>
-            @removeAttribute "editable"
-            adventure.act @innerHTML
+            event.preventDefault()
+            @innerHTML = "> #{@innerHTML}"
+            @removeAttribute "contenteditable"
+            adventure.act(@innerHTML) or adventure.prompt ""
+        field.focus()
 
-    new BrowserStory()
+    window.onload = () ->
+      new BrowserStory()
