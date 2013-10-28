@@ -1,6 +1,8 @@
 # an interface to play the game in the command line
 
     class NodeInterface
+      constructor: (callback) ->
+        callback()
       print: (string) ->
         process.stdin.resume()
         process.stdout.write "#{string}\n"
@@ -9,6 +11,4 @@
         process.stdin.once "data", (data) ->
           callback data.toString().trim()
 
-    new Story {
-      interface: new NodeInterface
-    }
+    this.NodeInterface = NodeInterface

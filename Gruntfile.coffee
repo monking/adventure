@@ -6,29 +6,31 @@ module.exports = (grunt) ->
   grunt.initConfig
     pkg: grunt.file.readJSON "package.json"
     coffee:
-      default:
+      src:
         options:
           join: true
         files:
-          "public/js/node-game.js": [
+          "public/js/adventure.js": [
             "src/adventure.litcoffee"
-            "src/story.litcoffee"
+            "src/adventure-interface.litcoffee"
             "src/node-interface.litcoffee"
-          ]
-          "public/js/browser-game.js": [
-            "src/adventure.litcoffee"
-            "src/story.litcoffee"
             "src/browser-interface.litcoffee"
           ]
+      stories:
+        expand  : true
+        flatten : true
+        cwd     : 'stories'
+        src     : ['*.coffee']
+        dest    : 'public/stories/'
+        ext     : '.js'
     concat:
       default:
         files:
-          "public/js/browser-game.js": ["src/lib/marked/lib/marked.js","public/js/browser-game.js"]
+          "public/js/adventure.js": ["src/lib/marked/lib/marked.js","public/js/adventure.js"]
     uglify:
       min:
         files:
-          "public/js/node-game.js": ["public/js/node-game.js"]
-          "public/js/browser-game.js": ["src/lib/marked/lib/marked.js","public/js/browser-game.js"]
+          "public/js/adventure.js": ["src/lib/marked/lib/marked.js","public/js/adventure.js"]
     compass:
       default:
         options:
@@ -38,11 +40,11 @@ module.exports = (grunt) ->
       options:
         livereload: true
       scripts:
-        files: ["src/*"]
-        tasks: ["coffee","concat"]
+        files: ["src/*", "stories/*"]
+        tasks: ["coffee"]
       styles:
         files: ["style/sass/*"]
         tasks: ["compass"]
 
-  grunt.registerTask "default", ["coffee", "uglify", "compass", "watch"]
-  grunt.registerTask "dev", ["coffee", "concat", "compass", "watch"]
+  grunt.registerTask "default", ["coffee:src", "coffee:stories", "uglify", "compass", "watch"]
+  grunt.registerTask "dev", ["coffee:src", "coffee:stories", "concat", "compass", "watch"]

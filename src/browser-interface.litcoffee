@@ -1,6 +1,11 @@
 # an interface to play the game in the browser
 
-    class BrowserInterface
+    class BrowserInterface extends AdventureInterface
+      constructor: (callback) ->
+        oldOnload = window.onload
+        window.onload = () ->
+          oldOnload() if oldOnload?
+          callback()
       print: (markdown) ->
         log = document.getElementById "log"
         li = document.createElement "li"
@@ -23,7 +28,4 @@
             callback @innerHTML
         field.focus()
 
-    window.onload = () ->
-      new Story {
-        interface: new BrowserInterface
-      }
+    this.BrowserInterface = BrowserInterface

@@ -1,15 +1,36 @@
 (function() {
-  var Adventure, Character, Item, NodeInterface, Scene, Story, _ref,
+  var Adventure, AdventureInterface, BrowserInterface, Character, Item, NodeInterface, Scene,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   Adventure = (function() {
     function Adventure(options) {
-      this["interface"] = options["interface"];
-      this.start();
+      var action, interfaceCallback, name, self, _ref;
+      self = this;
+      this.scenes = options.scenes || {};
+      this.cast = options.cast || {};
+      this.items = options.items || {};
+      if (options.actions != null) {
+        _ref = options.actions;
+        for (name in _ref) {
+          action = _ref[name];
+          this.actions[name] = action;
+        }
+      }
+      this.story = options.story;
+      interfaceCallback = function() {
+        return self.start();
+      };
+      if (options["interface"] != null) {
+        this["interface"] = new options["interface"](interfaceCallback);
+      } else {
+        this["interface"] = new (typeof module !== "undefined" && module !== null ? NodeInterface : BrowserInterface)(interfaceCallback);
+      }
+      console.log(this["interface"]);
     }
 
     Adventure.prototype.start = function() {
+      this.inventory = {};
       this.history = {
         been: {},
         at: null,
@@ -17,8 +38,7 @@
       };
       this.scene = null;
       this.state = "breathing";
-      this.inventory = {};
-      return this.go(this.firstScene);
+      return this.story();
     };
 
     Adventure.prototype.narrate = function(statement) {
@@ -116,116 +136,7 @@
       return this.history.been[sceneName] != null;
     };
 
-    return Adventure;
-
-  })();
-
-  Scene = (function() {
-    function Scene(options) {
-      this.intro = options.intro;
-      this.description = options.description;
-      this.exits = options.exits;
-      this.event = options.event || function() {
-        return null;
-      };
-    }
-
-    Scene.prototype.describe = function(been) {
-      var output;
-      if (been == null) {
-        been = false;
-      }
-      if ((this.intro != null) && !been) {
-        output = "\n" + this.intro;
-      } else {
-        output = "\n" + this.description;
-      }
-      if (this.exits != null) {
-        output += "\n\nExits are **" + (this.exits.join("**, **")) + "**.";
-      }
-      return output;
-    };
-
-    return Scene;
-
-  })();
-
-  Item = (function() {
-    function Item(options) {
-      this.name = options.name;
-    }
-
-    return Item;
-
-  })();
-
-  Character = (function() {
-    function Character(options) {
-      this.name = options.name;
-    }
-
-    return Character;
-
-  })();
-
-  Story = (function(_super) {
-    __extends(Story, _super);
-
-    function Story() {
-      _ref = Story.__super__.constructor.apply(this, arguments);
-      return _ref;
-    }
-
-    Story.prototype.firstScene = "car 2";
-
-    Story.prototype.scenes = {
-      "car 1": new Scene({
-        description: "You are in **car 1**, just behind the locomotive engine.\n\nHuh. The scent is _weaker_ here. You would have thought, closer\nto the engine...",
-        exits: ["car 2", "the tracks"]
-      }),
-      "car 2": new Scene({
-        intro: "In all the times that you've taken the train to the coast,\nyou've never noticed the smell of the train car before. It's not\nunpleasant now, but it's all you can think about: cigarettes,\ndisinfectant, and mechanical grease, like a motel set on top of\nan engine block.\n\nThere's another scent in there, now that you notice, that you\ncan't name right away. A vaguely dangerous, sharp note hanging in\nthe background. You've gradually sunk into your seat until you're\nactually quite uncomfortable, so you decide to get up and\nexplore.",
-        description: "You are in **car 2**, and the strange scent is barely perceptible\nhere.",
-        exits: ["car 1", "car 3", "the tracks"]
-      }),
-      "car 3": new Scene({
-        description: "You are in **car 3**. The smell is quite noticable here, and reminds\nyou of fireworks.",
-        exits: ["car 2", "room 1", "the tracks"]
-      }),
-      "room 1": new Scene({
-        description: "This story's *going somewhere*, I promise.",
-        exits: ["car 3", "window"]
-      }),
-      "the tracks": new Scene({
-        description: "***What are you thinking?*** This is a *moving train*.\n\nYou step out onto the tracks as if you were alighting at the\nstation, but a sleeper snags your shoe at 70MPH and you are\ncrushed and variously destroyed by the train, which is\ndisappearing into the distance without most of you.",
-        event: function() {
-          return this.state = "dead";
-        }
-      }),
-      "window": new Scene({
-        description: "***!?***\n\nOkay. You just ***leapt out of the window***. About half a\nheartbeat after your foot leaves the coping, your spinal cord\ninsists that you *grab something*, something firmly anchored to\nthe ground, far from gnashing teeth and rocky ballast.\n\nBut there is nothing to grab but the fluid air, and your ego\ncalmly watches as your id scrambles to survive. I don't hope to\never learn what you wanted to *achieve* by this. ***You are\ndead***.",
-        event: function() {
-          return this.state = "dead";
-        }
-      })
-    };
-
-    Story.prototype.cast = {
-      "cat": new Character({
-        name: "Moonbeam"
-      }),
-      "monkey": new Character({
-        name: "Monkey"
-      })
-    };
-
-    Story.prototype.inventory = {
-      "wrench": new Item({
-        name: "wrench"
-      })
-    };
-
-    Story.prototype.actions = {
+    Adventure.prototype.actions = {
       help: {
         pattern: /help/i,
         deed: function(match) {
@@ -284,12 +195,93 @@
       }
     };
 
-    return Story;
+    return Adventure;
 
-  })(Adventure);
+  })();
+
+  Scene = (function() {
+    function Scene(options) {
+      this.intro = options.intro;
+      this.description = options.description;
+      this.exits = options.exits;
+      this.event = options.event || function() {
+        return null;
+      };
+    }
+
+    Scene.prototype.describe = function(been) {
+      var output;
+      if (been == null) {
+        been = false;
+      }
+      if ((this.intro != null) && !been) {
+        output = "\n" + this.intro;
+      } else {
+        output = "\n" + this.description;
+      }
+      if (this.exits != null) {
+        output += "\n\nExits are **" + (this.exits.join("**, **")) + "**.";
+      }
+      return output;
+    };
+
+    return Scene;
+
+  })();
+
+  Item = (function() {
+    function Item(options) {
+      this.name = options.name;
+    }
+
+    return Item;
+
+  })();
+
+  Character = (function() {
+    function Character(options) {
+      this.name = options.name;
+    }
+
+    return Character;
+
+  })();
+
+  this.Adventure = Adventure;
+
+  this.Scene = Scene;
+
+  this.Item = Item;
+
+  this.Character = Character;
+
+  AdventureInterface = (function() {
+    function AdventureInterface(callback) {
+      callback();
+    }
+
+    AdventureInterface.prototype.print = function(markdown) {
+      if (typeof console !== "undefined" && console !== null) {
+        return console.log(markdown);
+      }
+    };
+
+    AdventureInterface.prototype.read = function(callback) {
+      if (typeof window !== "undefined" && window !== null) {
+        return callback(window.prompt());
+      }
+    };
+
+    return AdventureInterface;
+
+  })();
+
+  this.AdventureInterface = AdventureInterface;
 
   NodeInterface = (function() {
-    function NodeInterface() {}
+    function NodeInterface(callback) {
+      callback();
+    }
 
     NodeInterface.prototype.print = function(string) {
       process.stdin.resume();
@@ -307,8 +299,58 @@
 
   })();
 
-  new Story({
-    "interface": new NodeInterface
-  });
+  this.NodeInterface = NodeInterface;
+
+  BrowserInterface = (function(_super) {
+    __extends(BrowserInterface, _super);
+
+    function BrowserInterface(callback) {
+      var oldOnload;
+      oldOnload = window.onload;
+      window.onload = function() {
+        if (oldOnload != null) {
+          oldOnload();
+        }
+        return callback();
+      };
+    }
+
+    BrowserInterface.prototype.print = function(markdown) {
+      var li, log;
+      log = document.getElementById("log");
+      li = document.createElement("li");
+      li.className = "new";
+      li.innerHTML = marked(markdown);
+      return log.appendChild(li);
+    };
+
+    BrowserInterface.prototype.read = function(callback) {
+      var field, log;
+      log = document.getElementById("log");
+      field = document.createElement("li");
+      field.className = "new";
+      field.setAttribute("contenteditable", "true");
+      log.appendChild(field);
+      field.onkeydown = function(event) {
+        var li, newLI;
+        if (event.keyCode === 13) {
+          event.preventDefault();
+          this.innerHTML = "> " + this.innerHTML;
+          this.removeAttribute("contenteditable");
+          newLI = document.getElementsByClassName("new");
+          while (li = newLI[0]) {
+            li.className = li.className.replace(/(^| )new( |$)/, "");
+          }
+          return callback(this.innerHTML);
+        }
+      };
+      return field.focus();
+    };
+
+    return BrowserInterface;
+
+  })(AdventureInterface);
+
+  this.BrowserInterface = BrowserInterface;
 
 }).call(this);

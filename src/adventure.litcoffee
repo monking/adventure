@@ -11,18 +11,30 @@
 
     class Adventure
       constructor: (options) ->
-        @interface = options.interface
-        @start()
+        self = @
+
+        @scenes = options.scenes or {}
+        @cast = options.cast or {}
+        @items = options.items or {}
+        @actions[name] = action for name, action of options.actions if options.actions?
+        @story = options.story
+
+        interfaceCallback = () -> self.start()
+        if options.interface?
+          @interface = new options.interface(interfaceCallback)
+        else
+          @interface = new (if module? then NodeInterface else BrowserInterface)(interfaceCallback)
+        console.log @interface
 
       start: () ->
+        @inventory = {}
         @history =
           been: {}
           at: null
           back: null
         @scene = null
         @state = "breathing"
-        @inventory = {}
-        @go @firstScene
+        @story()
 
       narrate: (statement) ->
         @interface.print statement
@@ -91,6 +103,45 @@
         sceneName = @history.at if not sceneName?
         @history.been[sceneName]?
 
+      actions:
+        help:
+          pattern: /help/i
+          deed: (match) ->
+            @narrate "Commands are 'go', 'pick up', 'use', 'look', and 'help'"
+            @prompt @scene.describe(@haveBeen())
+        look:
+          pattern: /where(( am i| are we)\??)?|look( at( the)?)?( (.*))?/i
+          deed: (match) ->
+            if match[6]?
+              @prompt "You look right at #{match[6]}"
+            else
+              @prompt @scene.describe(@haveBeen())
+        pickUp:
+          pattern: /pick up( ([0-9]+|the|a|some|an|all))? (.*)/i
+          deed: (match) ->
+            article = match[2] or "the"
+            object = match[3]
+            @prompt "You pick up #{article} #{object}."
+        go:
+          pattern: /go( (to( the)?))? (.*)\.?/i
+          deed: (match) ->
+            @go match[4]
+        use:
+          pattern: /use (.*?)(( (with|on) )?(.*))/i
+          deed: (match) ->
+            object = if match[1] then match[1] else match[5]
+            target = match[5] if match[1]
+            @use object, target
+            @prompt()
+        restart:
+          pattern: /restart/i
+          deed: () ->
+            @start()
+        say:
+          pattern: /say (.*)/i
+          deed: (match) ->
+            @prompt "\"#{match[1]}\""
+
 
     class Scene
       constructor: (options) ->
@@ -114,3 +165,8 @@
     class Character
       constructor: (options) ->
         @name = options.name
+
+    this.Adventure = Adventure
+    this.Scene = Scene
+    this.Item = Item
+    this.Character = Character
