@@ -1,5 +1,5 @@
 (function() {
-  var Adventure, Cat, Character, Item, Monkey, Scene, SuperWrench, Wrench, _ref, _ref1, _ref2, _ref3,
+  var Adventure, Cat, Character, Item, Monkey, Scene, Scenery, SuperWrench, Window, Wrench, _ref, _ref1, _ref2, _ref3,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -8,6 +8,8 @@
   Item = this.Item;
 
   Scene = this.Scene;
+
+  Scenery = this.Scenery;
 
   Adventure = this.Adventure;
 
@@ -76,12 +78,53 @@
     SuperWrench.prototype.name = "Superwrench!";
 
     SuperWrench.prototype.description = function() {
-      return "Not just any wrench! Do what you will!";
+      return "Not just any wrench! Your will be done!";
     };
 
     return SuperWrench;
 
   })(Wrench);
+
+  Window = (function(_super) {
+    __extends(Window, _super);
+
+    Window.prototype.name = "window";
+
+    Window.prototype.description = function() {
+      return "It's stuffy in here. Maybe open a window? Yeah!";
+    };
+
+    function Window(params) {
+      Window.__super__.constructor.call(this, params);
+      this.state = (params && params.state) || "closed";
+      this.actions.open = function() {
+        this.state = "open";
+        return {
+          go: "window"
+        };
+      };
+      this.actions.close = function() {
+        this.state = "closed";
+        return {
+          message: "The window is now shut."
+        };
+      };
+      this.actions.go = function() {
+        if (this.state !== "open") {
+          return {
+            message: "You have to open the window first."
+          };
+        } else {
+          return {
+            message: "Okay!"
+          };
+        }
+      };
+    }
+
+    return Window;
+
+  })(Scenery);
 
   new Adventure({
     story: function() {
@@ -94,7 +137,7 @@
         },
         objects: {
           "wrench": new Wrench({
-            count: 2
+            count: 1
           })
         },
         exits: ["car 2"],
@@ -121,7 +164,11 @@
         description: function() {
           return "This story's *going somewhere*, I promise.";
         },
-        exits: ["car 3", "window"]
+        exits: ["car 3"],
+        softExits: ["window"],
+        objects: {
+          "window": new Window()
+        }
       }),
       "the tracks outside": new Scene({
         description: function() {

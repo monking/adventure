@@ -1,6 +1,7 @@
 Character = @Character
 Item = @Item
 Scene = @Scene
+Scenery = @Scenery
 Adventure = @Adventure
 
 class Cat extends Character
@@ -17,7 +18,25 @@ class Wrench extends Item
 
 class SuperWrench extends Wrench
   name: "Superwrench!"
-  description: () -> "Not just any wrench! Do what you will!"
+  description: () -> "Not just any wrench! Your will be done!"
+
+class Window extends Scenery
+  name: "window"
+  description: () -> "It's stuffy in here. Maybe open a window? Yeah!"
+  constructor: (params) ->
+    super params
+    @state = (params and params.state) or "closed"
+    @actions.open = () ->
+      @state = "open"
+      {go:"window"}
+    @actions.close = () ->
+      @state = "closed"
+      {message:"The window is now shut."}
+    @actions.go = () ->
+      if @state isnt "open"
+        {message:"You have to open the window first."}
+      else
+        {message:"Okay!"}
 
 new Adventure
   story: () ->
@@ -36,7 +55,7 @@ new Adventure
         """
       objects:
         "wrench": new Wrench
-          count: 2
+          count: 1
       exits: [
         "car 2"
       ]
@@ -86,8 +105,12 @@ new Adventure
         """
       exits: [
         "car 3"
+      ]
+      softExits: [
         "window"
       ]
+      objects:
+        "window": new Window()
     "the tracks outside": new Scene
       description: () -> """
         ***What are you thinking?*** This is a *moving train*.

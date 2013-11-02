@@ -88,19 +88,21 @@
           object = context.objects? and context.objects[objectName] ? null
 
         if object
-          count = 0
-          if item = itemName and @inventory[itemName] ? null
+          count = 1
+          if item = itemName and @scene.objects[itemName] ? null
             if article is "all"
               count = item.count
             else if not isNaN article and article isnt ""
               count = Number article
-            else
-              count = 1
           if item and count > item.count
             output = "You don't have #{article} #{itemName}"
           else
             result = object.receiveAction {verb, item, count}
-            output = result.message
+            if result.item?
+              @get result.item
+            if result.go?
+              @go result.go
+            output = result.message or ""
             if context? and object.count is 0
               delete context.objects[objectName]
         else
@@ -129,7 +131,10 @@
           @history.back = @history.at
           @history.at = sceneName
           @scene = @scenes[sceneName]
-          @narrate @actOn "scene", "look"
+          if @scene.event?
+            @scene.event.call @
+          else
+            @narrate @actOn "scene", "look"
           @scene.been = true
         else
           @narrate "Can you be more specific?"
@@ -140,16 +145,27 @@
           deed: (match) ->
             @narrate "Commands are 'go', 'pick up', 'use', 'look', and 'help'"
             @narrate @actOn "scene", "look"
-        look:
-          pattern: /where( am i| are we)?|(look( at)?|check out|what is|what's)( the| a)? ?(.*)/i
+        open:
+          pattern: /open (.*)/i
           deed: (match) ->
-            if /me|self|health/i.test match[5]
+            if /inv(entory)?/i.test match[1]
+              @actions.inventory.deed.call(@)
+            else
+              if match[1]?
+                @narrate @actOn match[1], "open"
+              else
+                @narrate "Open...what?"
+
+        look:
+          pattern: /where( am i| are we)?|(look( at)?|check out|what is|what's)( the| a)?( (.*))?/i
+          deed: (match) ->
+            if /me|self|health/i.test match[6]
               @actions.state.deed.call(@)
             else
-              if not match[5]? or /around|about/i.test match[5]
+              if not match[6]? or /around|about/i.test match[6]
                 objectName = "scene"
               else
-                objectName = match[5]
+                objectName = match[6]
 
               @narrate @actOn objectName, "look"
         pickUp:
@@ -157,7 +173,7 @@
           deed: (match) ->
             article = match[3] or "the"
             itemName = match[4]
-            @narrate @actOn itemName, "take", null, article
+            @actOn itemName, "take", null, article
         state:
           pattern: /how am|state|health/i
           deed: (match) ->
@@ -166,7 +182,7 @@
           pattern: /inv(entory)?/i
           deed: (match) ->
             items = []
-            items.push "- #{item.count} #{item.name}" for item in @inventory
+            items.push "  - #{item.count} #{item.name}" for item in @inventory
             @narrate items.join "\n"
         go:
           pattern: /go( (to( the)?))? (.*)\.?/i
@@ -232,6 +248,7 @@
           @event
           @objects
         } = options
+        @options = options
         @been = false
 
         @actions.look = options.look ? () ->
@@ -250,7 +267,7 @@
         @actions.take = options? and options.take ? (params) ->
           item = @take params.count
           {
-            material: item
+            item: item
             dest: "inventory"
             message: if item? then "You take the #{@name}." else "You can't take #{params.count} #{@name}"
           }

@@ -1283,14 +1283,12 @@ if (typeof exports === 'object') {
         object = (_ref = (context.objects != null) && context.objects[objectName]) != null ? _ref : null;
       }
       if (object) {
-        count = 0;
-        if (item = (_ref1 = itemName && this.inventory[itemName]) != null ? _ref1 : null) {
+        count = 1;
+        if (item = (_ref1 = itemName && this.scene.objects[itemName]) != null ? _ref1 : null) {
           if (article === "all") {
             count = item.count;
           } else if (!isNaN(article && article !== "")) {
             count = Number(article);
-          } else {
-            count = 1;
           }
         }
         if (item && count > item.count) {
@@ -1301,7 +1299,13 @@ if (typeof exports === 'object') {
             item: item,
             count: count
           });
-          output = result.message;
+          if (result.item != null) {
+            this.get(result.item);
+          }
+          if (result.go != null) {
+            this.go(result.go);
+          }
+          output = result.message || "";
           if ((context != null) && object.count === 0) {
             delete context.objects[objectName];
           }
@@ -1340,7 +1344,11 @@ if (typeof exports === 'object') {
         this.history.back = this.history.at;
         this.history.at = sceneName;
         this.scene = this.scenes[sceneName];
-        this.narrate(this.actOn("scene", "look"));
+        if (this.scene.event != null) {
+          this.scene.event.call(this);
+        } else {
+          this.narrate(this.actOn("scene", "look"));
+        }
         return this.scene.been = true;
       } else {
         return this.narrate("Can you be more specific?");
@@ -1355,17 +1363,31 @@ if (typeof exports === 'object') {
           return this.narrate(this.actOn("scene", "look"));
         }
       },
+      open: {
+        pattern: /open (.*)/i,
+        deed: function(match) {
+          if (/inv(entory)?/i.test(match[1])) {
+            return this.actions.inventory.deed.call(this);
+          } else {
+            if (match[1] != null) {
+              return this.narrate(this.actOn(match[1], "open"));
+            } else {
+              return this.narrate("Open...what?");
+            }
+          }
+        }
+      },
       look: {
-        pattern: /where( am i| are we)?|(look( at)?|check out|what is|what's)( the| a)? ?(.*)/i,
+        pattern: /where( am i| are we)?|(look( at)?|check out|what is|what's)( the| a)?( (.*))?/i,
         deed: function(match) {
           var objectName;
-          if (/me|self|health/i.test(match[5])) {
+          if (/me|self|health/i.test(match[6])) {
             return this.actions.state.deed.call(this);
           } else {
-            if ((match[5] == null) || /around|about/i.test(match[5])) {
+            if ((match[6] == null) || /around|about/i.test(match[6])) {
               objectName = "scene";
             } else {
-              objectName = match[5];
+              objectName = match[6];
             }
             return this.narrate(this.actOn(objectName, "look"));
           }
@@ -1377,7 +1399,7 @@ if (typeof exports === 'object') {
           var article, itemName;
           article = match[3] || "the";
           itemName = match[4];
-          return this.narrate(this.actOn(itemName, "take", null, article));
+          return this.actOn(itemName, "take", null, article);
         }
       },
       state: {
@@ -1394,7 +1416,7 @@ if (typeof exports === 'object') {
           _ref = this.inventory;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             item = _ref[_i];
-            items.push("- " + item.count + " " + item.name);
+            items.push("  - " + item.count + " " + item.name);
           }
           return this.narrate(items.join("\n"));
         }
@@ -1485,6 +1507,7 @@ if (typeof exports === 'object') {
       var _ref;
       Scene.__super__.constructor.call(this, options);
       this.intro = options.intro, this.exits = options.exits, this.softExits = options.softExits, this.event = options.event, this.objects = options.objects;
+      this.options = options;
       this.been = false;
       this.actions.look = (_ref = options.look) != null ? _ref : function() {
         var output;
@@ -1517,7 +1540,7 @@ if (typeof exports === 'object') {
         var item;
         item = this.take(params.count);
         return {
-          material: item,
+          item: item,
           dest: "inventory",
           message: item != null ? "You take the " + this.name + "." : "You can't take " + params.count + " " + this.name
         };
