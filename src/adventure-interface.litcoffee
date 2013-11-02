@@ -3,7 +3,7 @@
 # desired environment
 
     class AdventureInterface
-      constructor: (callback) ->
+      attach: (callback) ->
         callback()
       print: (markdown) ->
         console.log(markdown) if console?

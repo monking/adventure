@@ -1,7 +1,7 @@
 # an interface to play the game in the browser
 
     class BrowserInterface extends AdventureInterface
-      constructor: (callback) ->
+      attach: (callback) ->
         oldOnload = window.onload
         window.onload = () ->
           oldOnload() if oldOnload?

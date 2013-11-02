@@ -32,7 +32,7 @@
   margin: 0 auto;
 }
 /* line 25, ../../style/sass/screen.scss */
-#log li {
+#log > li {
   list-style: none;
   line-height: 1.3em;
   min-height: 1.3em;
@@ -41,15 +41,15 @@
   overflow: hidden;
 }
 /* line 33, ../../style/sass/screen.scss */
-#log li.new {
+#log > li.new {
   background-color: transparent;
 }
 /* line 37, ../../style/sass/screen.scss */
-#log li[contenteditable] {
+#log > li[contenteditable] {
   outline: none;
 }
 /* line 39, ../../style/sass/screen.scss */
-#log li[contenteditable]:before {
+#log > li[contenteditable]:before {
   content: "> ";
   text-decoration: blink;
   -webkit-animation-name: blinker;
@@ -60,4 +60,12 @@
   animation-timing-function: cubic-bezier(1, 0, 0, 1);
   -webkit-animation-duration: 1s;
   animation-duration: 1s;
+}
+/* line 45, ../../style/sass/screen.scss */
+#log > li ul {
+  margin: 1em 0;
+}
+/* line 48, ../../style/sass/screen.scss */
+#log > li li p {
+  margin: 0;
 }

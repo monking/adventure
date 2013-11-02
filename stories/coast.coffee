@@ -1,20 +1,50 @@
+Character = @Character
+Item = @Item
+Scene = @Scene
+Adventure = @Adventure
+
+class Cat extends Character
+  name: "cat"
+  description: () -> "Do you like cats? Because here's a cat."
+
+class Monkey extends Character
+  name: "monkey"
+  description: () -> "Of course it's a monkey."
+
+class Wrench extends Item
+  name: "wrench"
+  description: () -> "It is a good wrench. Good and true."
+
+class SuperWrench extends Wrench
+  name: "Superwrench!"
+  description: () -> "Not just any wrench! Do what you will!"
+
 new Adventure
   story: () ->
     @go "car 2"
   scenes:
     "car 1": new Scene
-      description: """
-        You are in **car 1**, just behind the locomotive engine.
+      description: () -> """
+        You are in **car 1**, just behind the locomotive engine. 
+        """ + (@objects.wrench and """
+        There is a fine wrench resting on a bench near the door to the engine.
+        """ or "") + """
+
 
         Huh. The scent is _weaker_ here. You would have thought, closer
         to the engine...
         """
+      objects:
+        "wrench": new Wrench
+          count: 2
       exits: [
         "car 2"
-        "the tracks"
+      ]
+      softExits: [
+        "the tracks outside"
       ]
     "car 2": new Scene
-      intro: """
+      intro: () -> """
         In all the times that you've taken the train to the coast,
         you've never noticed the smell of the train car before. It's not
         unpleasant now, but it's all you can think about: cigarettes,
@@ -27,35 +57,39 @@ new Adventure
         actually quite uncomfortable, so you decide to get up and
         explore.
         """
-      description: """
+      description: () -> """
         You are in **car 2**, and the strange scent is barely perceptible
         here.
         """
       exits: [
         "car 1"
         "car 3"
-        "the tracks"
+      ]
+      softExits: [
+        "the tracks outside"
       ]
     "car 3": new Scene
-      description: """
+      description: () -> """
         You are in **car 3**. The smell is quite noticable here, and reminds
         you of fireworks.
         """
       exits: [
         "car 2"
         "room 1"
-        "the tracks"
+      ]
+      softExits: [
+        "the tracks outside"
       ]
     "room 1": new Scene
-      description: """
+      description: () -> """
         This story's *going somewhere*, I promise.
         """
       exits: [
         "car 3"
         "window"
       ]
-    "the tracks": new Scene
-      description: """
+    "the tracks outside": new Scene
+      description: () -> """
         ***What are you thinking?*** This is a *moving train*.
 
         You step out onto the tracks as if you were alighting at the
@@ -66,7 +100,7 @@ new Adventure
       event: () ->
         @state = "dead"
     "window": new Scene
-      description: """
+      description: () -> """
         ***!?***
 
         Okay. You just ***leapt out of the window***. About half a
@@ -81,16 +115,17 @@ new Adventure
         """
       event: () ->
         @state = "dead"
-  cast:
-    "cat": new Character
-      name: "Moonbeam"
-    "monkey": new @Character
-      name: "Monkey"
-  items:
-    "wrench": new @Item
-      name: "wrench"
   actions:
     wonder:
       pattern: /wonder/i
       deed: (match) ->
-        @narrate "You think you're so important"
+        @prompt "You think you're so important."
+    when:
+      pattern: /when/i
+      deed: (match) ->
+        @prompt "Buy a watch."
+  cast:
+    "steve": new Cat
+      name: "steve"
+    "hank": new Monkey
+      name: "hank"

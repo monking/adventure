@@ -19,17 +19,18 @@
         @actions[name] = action for name, action of options.actions if options.actions?
         @story = options.story
 
-        interfaceCallback = () -> self.start()
         if options.interface?
-          @interface = new options.interface(interfaceCallback)
+          @interface = new options.interface()
         else
-          @interface = new (if module? then NodeInterface else BrowserInterface)(interfaceCallback)
-        console.log @interface
+          @interface = new (if module? then NodeInterface else BrowserInterface)()
+        @interface.attach () ->
+          self.start()
+          self.prompt()
 
       start: () ->
-        @inventory = {}
+        scene.been = false for name, scene of @scenes
+        @inventory = []
         @history =
-          been: {}
           at: null
           back: null
         @scene = null
@@ -46,12 +47,13 @@
           if callback?
             callback input
           else
-            self.act(input) or self.prompt("")
+            self.parse(input)
+            self.prompt()
 
-      act: (statement) ->
+      parse: (statement) ->
         self = @
         actionFound = false
-        if @state is "dead"
+        if @state is "dead" and not /restart/i.test statement
           @prompt """
             You're still dead. Continue from the beginning? (Say "yes")
             """,
@@ -59,80 +61,124 @@
               if /yes/i.test answer
                 self.start()
               else
-                self.act answer
+                self.parse answer
           actionFound = true
         else
           for name, act of @actions
             if match = statement.match act.pattern
               act.deed.apply @, [match]
               actionFound = true
+              break
 
         actionFound
+
+      get: (item) ->
+        @inventory.push item
+        count = 0
+        (count++ if holding.name is item.name) for holding in @inventory
+        "You now have #{count} #{item.name}"
+
+      actOn: (objectName, verb, itemName, article) ->
+        # console.log "actOn: #{objectName}, #{verb}, #{itemName}, #{article}"
+        if not objectName or objectName is "scene"
+          context = null
+          object = @scene
+        else
+          context = @scene
+          object = context.objects? and context.objects[objectName] ? null
+
+        if object
+          count = 0
+          if item = itemName and @inventory[itemName] ? null
+            if article is "all"
+              count = item.count
+            else if not isNaN article and article isnt ""
+              count = Number article
+            else
+              count = 1
+          if item and count > item.count
+            output = "You don't have #{article} #{itemName}"
+          else
+            result = object.receiveAction {verb, item, count}
+            output = result.message
+            if context? and object.count is 0
+              delete context.objects[objectName]
+        else
+          output = "There is no #{objectName} here."
+        output
 
       go: (sceneName) ->
         sceneName = @history.back if sceneName is "back"
         pattern = new RegExp sceneName, "i"
-        if not @scene? or (@scene.exits? and pattern.test @scene.exits.toString())
+
+        if not @scene?
+          sceneMatchCount = 1
+        else
+          exits = @scene.exits.slice() ? []
+          exits = exits.concat(@scene.softExits) if @scene.softExits?
+
           sceneMatchCount = 0
-          if not @scene?
-            sceneMatchCount = 1
-          else
-            for name in @scene.exits
-              if pattern.test name
-                sceneName = name
-                sceneMatchCount++
-          if sceneMatchCount is 1
-            @history.back = @history.at
-            @history.at = sceneName
-            @scene = @scenes[sceneName]
-            @scene.event.call(@)?
-            @prompt @scene.describe(@haveBeen())
-            @history.been[sceneName] = true
-          else
-            @prompt "Can you be more specific?"
-        else
-          @prompt "You can't go there from here."
+          for name in exits
+            if pattern.test name
+              sceneName = name
+              sceneMatchCount++
 
-      use: (object, target) ->
-        if target?
-          @narrate "You use the #{object} on #{target}"
+        if sceneMatchCount is 0
+          @narrate "You can't go there from here."
+        else if sceneMatchCount is 1
+          @history.back = @history.at
+          @history.at = sceneName
+          @scene = @scenes[sceneName]
+          @narrate @actOn "scene", "look"
+          @scene.been = true
         else
-          @narrate "You use the #{object}"
-
-      haveBeen: (sceneName) ->
-        sceneName = @history.at if not sceneName?
-        @history.been[sceneName]?
+          @narrate "Can you be more specific?"
 
       actions:
         help:
           pattern: /help/i
           deed: (match) ->
             @narrate "Commands are 'go', 'pick up', 'use', 'look', and 'help'"
-            @prompt @scene.describe(@haveBeen())
+            @narrate @actOn "scene", "look"
         look:
-          pattern: /where(( am i| are we)\??)?|look( at( the)?)?( (.*))?/i
+          pattern: /where( am i| are we)?|(look( at)?|check out|what is|what's)( the| a)? ?(.*)/i
           deed: (match) ->
-            if match[6]?
-              @prompt "You look right at #{match[6]}"
+            if /me|self|health/i.test match[5]
+              @actions.state.deed.call(@)
             else
-              @prompt @scene.describe(@haveBeen())
+              if not match[5]? or /around|about/i.test match[5]
+                objectName = "scene"
+              else
+                objectName = match[5]
+
+              @narrate @actOn objectName, "look"
         pickUp:
-          pattern: /pick up( ([0-9]+|the|a|some|an|all))? (.*)/i
+          pattern: /(pick up|take|get)( ([0-9]+|the|a|some|an|all))? (.*)/i
           deed: (match) ->
-            article = match[2] or "the"
-            object = match[3]
-            @prompt "You pick up #{article} #{object}."
+            article = match[3] or "the"
+            itemName = match[4]
+            @narrate @actOn itemName, "take", null, article
+        state:
+          pattern: /how am|state|health/i
+          deed: (match) ->
+            @narrate "Well, you're #{@state}."
+        inventory:
+          pattern: /inv(entory)?/i
+          deed: (match) ->
+            items = []
+            items.push "- #{item.count} #{item.name}" for item in @inventory
+            @narrate items.join "\n"
         go:
           pattern: /go( (to( the)?))? (.*)\.?/i
           deed: (match) ->
             @go match[4]
         use:
-          pattern: /use (.*?)(( (with|on) )?(.*))/i
+          pattern: /use( ([0-9]+|the|a|some|an|all))? (.+?)( (with|on)( the)? (.*))?/i
           deed: (match) ->
-            object = if match[1] then match[1] else match[5]
-            target = match[5] if match[1]
-            @use object, target
-            @prompt()
+            itemName = match[3]
+            article = match[2]
+            objectName = match[7]
+            @narrate @actOn objectName, "use", itemName, article
         restart:
           pattern: /restart/i
           deed: () ->
@@ -140,33 +186,92 @@
         say:
           pattern: /say (.*)/i
           deed: (match) ->
-            @prompt "\"#{match[1]}\""
+            @narrate "\"#{match[1]}\""
 
+# The base class for things you can look at or interact with is `Scenery`.
+# Scenes, items, and characters, all extend this class.
+#
+# The method `receiveAction` tries to do something to an object this bit of
+# Scenery, and if there is an item involved, the `count` lets the action know
+# how many of the item to involve in the action ("the", "2", "all", etc.)
 
-    class Scene
+    class Scenery
       constructor: (options) ->
-        @intro = options.intro
-        @description = options.description
-        @exits = options.exits
-        @event = options.event or () -> null
+        @options = options
+        @actions =
+          look: () -> {message:@description()}
+        @name = options.name if options? and options.name?
+        @description = options.description if options? and options.description?
+        @actions[name] = action for name, action of options.actions if options? and options.actions?
 
-      describe: (been = false) ->
-        if @intro? and not been
-          output = "\n#{@intro}"
+      clone: () ->
+        newInstance = new @constructor(@options)
+
+      receiveAction: (params) ->
+        if @actions[params.verb]?
+          @actions[params.verb].apply @, [params]
         else
-          output = "\n#{@description}"
-        output += "\n\nExits are **#{@exits.join "**, **"}**." if @exits?
-        output
+          {message: "I'm not sure what you mean."}
 
-    class Item
+# Each Scene consists of an `intro`, a `description`, a list of `exits`, and an
+# `event`.
+#
+# The intro is printed the first time the player enters the scene, and the
+# description is printed each time after that, and when they use the `look`
+# command. Exits are the names of other scenes you can access from that scene).
+# The event is a function which is called when the user enters the scene.  If a
+# scene has any complex logic, it will be controlled by the `event` function.
+
+    class Scene extends Scenery
+      constructor: (options) ->
+        super(options)
+        {
+          @intro
+          @exits
+          @softExits
+          @event
+          @objects
+        } = options
+        @been = false
+
+        @actions.look = options.look ? () ->
+          if @intro? and not @been
+            output = "\n#{@intro()}"
+          else
+            output = "\n#{@description()}"
+          output += "\n\nExits are **#{@exits.join "**, **"}**." if @exits?
+          {message:output}
+
+    class Item extends Scenery
+      constructor: (options) ->
+        super(options)
+        @count = options? and options.count ? 1
+
+        @actions.take = options? and options.take ? (params) ->
+          item = @take params.count
+          {
+            material: item
+            dest: "inventory"
+            message: if item? then "You take the #{@name}." else "You can't take #{params.count} #{@name}"
+          }
+
+      take: (quantity = 1) ->
+        quantity = Math.min quantity, @count
+        newInstance = @clone()
+        newInstance.count = quantity
+        @count -= quantity
+        newInstance
+
+      description: () -> "It's a thing, for sure."
+
+    class Character extends Scenery
       constructor: (options) ->
         @name = options.name
 
-    class Character
-      constructor: (options) ->
-        @name = options.name
+      description: () -> "Who or what could it be?"
 
-    this.Adventure = Adventure
-    this.Scene = Scene
-    this.Item = Item
-    this.Character = Character
+    @Adventure = Adventure
+    @Scenery   = Scenery
+    @Scene     = Scene
+    @Item      = Item
+    @Character = Character

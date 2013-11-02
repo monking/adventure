@@ -41,7 +41,7 @@ module.exports = (grunt) ->
         livereload: true
       scripts:
         files: ["src/*", "stories/*"]
-        tasks: ["coffee"]
+        tasks: ["coffee:src", "coffee:stories", "concat"]
       styles:
         files: ["style/sass/*"]
         tasks: ["compass"]
