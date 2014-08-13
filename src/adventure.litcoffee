@@ -52,7 +52,6 @@
 
       parse: (statement) ->
         self = @
-        actionFound = false
         if @state is "dead" and not /restart/i.test statement
           @prompt """
             You're still dead. Continue from the beginning? (Say "yes")
@@ -62,15 +61,15 @@
                 self.start()
               else
                 self.parse answer
-          actionFound = true
         else
+          actionFound = false
           for name, act of @actions
             if match = statement.match act.pattern
               act.deed.apply @, [match]
               actionFound = true
               break
-
-        actionFound
+          if not actionFound
+            @narrate "I'm not sure what you mean."
 
       get: (item) ->
         @inventory.push item
@@ -109,35 +108,50 @@
           output = "There is no #{objectName} here."
         output
 
-      go: (sceneName) ->
-        sceneName = @history.back if sceneName is "back"
-        pattern = new RegExp sceneName, "i"
+      go: (targetName) ->
+        targetName = @history.back if targetName is "back"
+        pattern = new RegExp targetName, "i"
+
+        sceneMatchCount = 0
+        objectMatchCount = 0
 
         if not @scene?
           sceneMatchCount = 1
         else
           exits = @scene.exits.slice() ? []
-          exits = exits.concat(@scene.softExits) if @scene.softExits?
+          exits = exits.concat(@scene.hiddenExits) if @scene.hiddenExits?
 
-          sceneMatchCount = 0
           for name in exits
             if pattern.test name
-              sceneName = name
+              targetName = name
               sceneMatchCount++
 
-        if sceneMatchCount is 0
-          @narrate "You can't go there from here."
-        else if sceneMatchCount is 1
-          @history.back = @history.at
-          @history.at = sceneName
-          @scene = @scenes[sceneName]
-          if @scene.event?
-            @scene.event.call @
+          if @scene.objects
+            for name in @scene.objects
+              console.log "object name", name # XXX
+              if pattern.test name
+                targetName = name
+                objectMatchCount++
           else
-            @narrate @actOn "scene", "look"
-          @scene.been = true
-        else
+            console.log "no objects in this scene" # XXX
+
+        if sceneMatchCount + objectMatchCount is 1
+          if sceneMatchCount
+            @history.back = @history.at
+            @history.at = targetName
+            @scene = @scenes[targetName]
+            if @scene.event?
+              @scene.event.call @
+            else
+              @narrate @actOn "scene", "look"
+            @scene.been = true
+          else if objectMatchCount
+            @scene.objects[targetName].go()
+        else if sceneMatchCount + objectMatchCount > 1
           @narrate "Can you be more specific?"
+        else
+          console.log sceneMatchCount, objectMatchCount # XXX
+          @narrate "You can't go there from here."
 
       actions:
         help:
@@ -155,17 +169,26 @@
                 @narrate @actOn match[1], "open"
               else
                 @narrate "Open...what?"
-
-        look:
-          pattern: /where( am i| are we)?|(look( at)?|check out|what is|what's)( the| a)?( (.*))?/i
+        close:
+          pattern: /(close|shut) (.*)/i
           deed: (match) ->
-            if /me|self|health/i.test match[6]
+            if /inv(entory)?/i.test match[2]
+              @actions.inventory.deed.call(@)
+            else
+              if match[2]?
+                @narrate @actOn match[2], "close"
+              else
+                @narrate "Close...what?"
+        look:
+          pattern: /where( am i| are we)?|(look( at)?|check out|what is|what's|what( kind of)?)( the| a)?( (.*?))?( is it)?[!.?]*$/i
+          deed: (match) ->
+            if /me|self|health/i.test match[7]
               @actions.state.deed.call(@)
             else
-              if not match[6]? or /around|about/i.test match[6]
+              if not match[7]? or /around|about/i.test match[7]
                 objectName = "scene"
               else
-                objectName = match[6]
+                objectName = match[7]
 
               @narrate @actOn objectName, "look"
         pickUp:
@@ -185,9 +208,9 @@
             items.push "  - #{item.count} #{item.name}" for item in @inventory
             @narrate items.join "\n"
         go:
-          pattern: /go( (to( the)?))? (.*)\.?/i
+          pattern: /go( ((to|through)( the)?))? (.*)\.?/i
           deed: (match) ->
-            @go match[4]
+            @go match[5]
         use:
           pattern: /use( ([0-9]+|the|a|some|an|all))? (.+?)( (with|on)( the)? (.*))?/i
           deed: (match) ->
@@ -244,7 +267,7 @@
         {
           @intro
           @exits
-          @softExits
+          @hiddenExits
           @event
           @objects
         } = options

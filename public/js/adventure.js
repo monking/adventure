@@ -1165,7 +1165,7 @@ if (typeof exports === 'object') {
 }());
 
 (function() {
-  var Adventure, AdventureInterface, BrowserInterface, Character, Item, NodeInterface, Scene, Scenery, _ref,
+  var Adventure, AdventureInterface, BrowserInterface, Character, Item, NodeInterface, Scene, Scenery,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -1235,17 +1235,16 @@ if (typeof exports === 'object') {
     Adventure.prototype.parse = function(statement) {
       var act, actionFound, match, name, self, _ref;
       self = this;
-      actionFound = false;
       if (this.state === "dead" && !/restart/i.test(statement)) {
-        this.prompt("You're still dead. Continue from the beginning? (Say \"yes\")", function(answer) {
+        return this.prompt("You're still dead. Continue from the beginning? (Say \"yes\")", function(answer) {
           if (/yes/i.test(answer)) {
             return self.start();
           } else {
             return self.parse(answer);
           }
         });
-        actionFound = true;
       } else {
+        actionFound = false;
         _ref = this.actions;
         for (name in _ref) {
           act = _ref[name];
@@ -1255,8 +1254,10 @@ if (typeof exports === 'object') {
             break;
           }
         }
+        if (!actionFound) {
+          return this.narrate("I'm not sure what you mean.");
+        }
       }
-      return actionFound;
     };
 
     Adventure.prototype.get = function(item) {
@@ -1316,42 +1317,61 @@ if (typeof exports === 'object') {
       return output;
     };
 
-    Adventure.prototype.go = function(sceneName) {
-      var exits, name, pattern, sceneMatchCount, _i, _len, _ref;
-      if (sceneName === "back") {
-        sceneName = this.history.back;
+    Adventure.prototype.go = function(targetName) {
+      var exits, name, objectMatchCount, pattern, sceneMatchCount, _i, _j, _len, _len1, _ref, _ref1;
+      if (targetName === "back") {
+        targetName = this.history.back;
       }
-      pattern = new RegExp(sceneName, "i");
+      pattern = new RegExp(targetName, "i");
+      sceneMatchCount = 0;
+      objectMatchCount = 0;
       if (this.scene == null) {
         sceneMatchCount = 1;
       } else {
         exits = (_ref = this.scene.exits.slice()) != null ? _ref : [];
-        if (this.scene.softExits != null) {
-          exits = exits.concat(this.scene.softExits);
+        if (this.scene.hiddenExits != null) {
+          exits = exits.concat(this.scene.hiddenExits);
         }
-        sceneMatchCount = 0;
         for (_i = 0, _len = exits.length; _i < _len; _i++) {
           name = exits[_i];
           if (pattern.test(name)) {
-            sceneName = name;
+            targetName = name;
             sceneMatchCount++;
           }
         }
-      }
-      if (sceneMatchCount === 0) {
-        return this.narrate("You can't go there from here.");
-      } else if (sceneMatchCount === 1) {
-        this.history.back = this.history.at;
-        this.history.at = sceneName;
-        this.scene = this.scenes[sceneName];
-        if (this.scene.event != null) {
-          this.scene.event.call(this);
+        if (this.scene.objects) {
+          _ref1 = this.scene.objects;
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            name = _ref1[_j];
+            console.log("object name", name);
+            if (pattern.test(name)) {
+              targetName = name;
+              objectMatchCount++;
+            }
+          }
         } else {
-          this.narrate(this.actOn("scene", "look"));
+          console.log("no objects in this scene");
         }
-        return this.scene.been = true;
-      } else {
+      }
+      if (sceneMatchCount + objectMatchCount === 1) {
+        if (sceneMatchCount) {
+          this.history.back = this.history.at;
+          this.history.at = targetName;
+          this.scene = this.scenes[targetName];
+          if (this.scene.event != null) {
+            this.scene.event.call(this);
+          } else {
+            this.narrate(this.actOn("scene", "look"));
+          }
+          return this.scene.been = true;
+        } else if (objectMatchCount) {
+          return this.scene.objects[targetName].go();
+        }
+      } else if (sceneMatchCount + objectMatchCount > 1) {
         return this.narrate("Can you be more specific?");
+      } else {
+        console.log(sceneMatchCount, objectMatchCount);
+        return this.narrate("You can't go there from here.");
       }
     };
 
@@ -1377,17 +1397,31 @@ if (typeof exports === 'object') {
           }
         }
       },
+      close: {
+        pattern: /(close|shut) (.*)/i,
+        deed: function(match) {
+          if (/inv(entory)?/i.test(match[2])) {
+            return this.actions.inventory.deed.call(this);
+          } else {
+            if (match[2] != null) {
+              return this.narrate(this.actOn(match[2], "close"));
+            } else {
+              return this.narrate("Close...what?");
+            }
+          }
+        }
+      },
       look: {
-        pattern: /where( am i| are we)?|(look( at)?|check out|what is|what's)( the| a)?( (.*))?/i,
+        pattern: /where( am i| are we)?|(look( at)?|check out|what is|what's|what( kind of)?)( the| a)?( (.*?))?( is it)?[!.?]*$/i,
         deed: function(match) {
           var objectName;
-          if (/me|self|health/i.test(match[6])) {
+          if (/me|self|health/i.test(match[7])) {
             return this.actions.state.deed.call(this);
           } else {
-            if ((match[6] == null) || /around|about/i.test(match[6])) {
+            if ((match[7] == null) || /around|about/i.test(match[7])) {
               objectName = "scene";
             } else {
-              objectName = match[6];
+              objectName = match[7];
             }
             return this.narrate(this.actOn(objectName, "look"));
           }
@@ -1422,9 +1456,9 @@ if (typeof exports === 'object') {
         }
       },
       go: {
-        pattern: /go( (to( the)?))? (.*)\.?/i,
+        pattern: /go( ((to|through)( the)?))? (.*)\.?/i,
         deed: function(match) {
-          return this.go(match[4]);
+          return this.go(match[5]);
         }
       },
       use: {
@@ -1506,7 +1540,7 @@ if (typeof exports === 'object') {
     function Scene(options) {
       var _ref;
       Scene.__super__.constructor.call(this, options);
-      this.intro = options.intro, this.exits = options.exits, this.softExits = options.softExits, this.event = options.event, this.objects = options.objects;
+      this.intro = options.intro, this.exits = options.exits, this.hiddenExits = options.hiddenExits, this.event = options.event, this.objects = options.objects;
       this.options = options;
       this.been = false;
       this.actions.look = (_ref = options.look) != null ? _ref : function() {
@@ -1646,8 +1680,7 @@ if (typeof exports === 'object') {
     __extends(BrowserInterface, _super);
 
     function BrowserInterface() {
-      _ref = BrowserInterface.__super__.constructor.apply(this, arguments);
-      return _ref;
+      return BrowserInterface.__super__.constructor.apply(this, arguments);
     }
 
     BrowserInterface.prototype.attach = function(callback) {

@@ -1,5 +1,5 @@
 (function() {
-  var Adventure, Cat, Character, Item, Monkey, Scene, Scenery, SuperWrench, Window, Wrench, _ref, _ref1, _ref2, _ref3,
+  var Adventure, Cat, Character, Item, Monkey, Scene, Scenery, SuperWrench, Window, Wrench,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -17,8 +17,7 @@
     __extends(Cat, _super);
 
     function Cat() {
-      _ref = Cat.__super__.constructor.apply(this, arguments);
-      return _ref;
+      return Cat.__super__.constructor.apply(this, arguments);
     }
 
     Cat.prototype.name = "cat";
@@ -35,8 +34,7 @@
     __extends(Monkey, _super);
 
     function Monkey() {
-      _ref1 = Monkey.__super__.constructor.apply(this, arguments);
-      return _ref1;
+      return Monkey.__super__.constructor.apply(this, arguments);
     }
 
     Monkey.prototype.name = "monkey";
@@ -53,8 +51,7 @@
     __extends(Wrench, _super);
 
     function Wrench() {
-      _ref2 = Wrench.__super__.constructor.apply(this, arguments);
-      return _ref2;
+      return Wrench.__super__.constructor.apply(this, arguments);
     }
 
     Wrench.prototype.name = "wrench";
@@ -71,8 +68,7 @@
     __extends(SuperWrench, _super);
 
     function SuperWrench() {
-      _ref3 = SuperWrench.__super__.constructor.apply(this, arguments);
-      return _ref3;
+      return SuperWrench.__super__.constructor.apply(this, arguments);
     }
 
     SuperWrench.prototype.name = "Superwrench!";
@@ -97,26 +93,36 @@
     function Window(params) {
       Window.__super__.constructor.call(this, params);
       this.state = (params && params.state) || "closed";
+      this.messages = {
+        close: (params && params.closeMessage) || "As you press the window closed, the illusion of calm is restored to the room.",
+        open: (params && params.openMessage) || "Placing your hands on the window's edge, you feel the warmth of the sunlight in the metal, reminding you of the world this cool careening box is protecting you from. This doesn't prepare you, however, for the sudden noise of the wheels careening down the rails and the scream of the wind that hits you as you slide the window open."
+      };
       this.actions.open = function() {
         this.state = "open";
         return {
-          go: "window"
+          message: this.messages.open
         };
       };
       this.actions.close = function() {
         this.state = "closed";
         return {
-          message: "The window is now shut."
+          message: this.messages.close
         };
       };
       this.actions.go = function() {
         if (this.state !== "open") {
           return {
-            message: "You have to open the window first."
+            message: "You lean against the window, looking down to the slope alongside the train. Do you want to open it?",
+            action: function() {
+              return this.go("through the window");
+            }
           };
         } else {
           return {
-            message: "Okay!"
+            message: "Okay!",
+            action: function() {
+              return this.go("through the window");
+            }
           };
         }
       };
@@ -140,8 +146,7 @@
             count: 1
           })
         },
-        exits: ["car 2"],
-        softExits: ["the tracks outside"]
+        exits: ["car 2"]
       }),
       "car 2": new Scene({
         intro: function() {
@@ -150,24 +155,23 @@
         description: function() {
           return "You are in **car 2**, and the strange scent is barely perceptible\nhere.";
         },
-        exits: ["car 1", "car 3"],
-        softExits: ["the tracks outside"]
+        exits: ["car 1", "car 3"]
       }),
       "car 3": new Scene({
         description: function() {
           return "You are in **car 3**. The smell is quite noticable here, and reminds\nyou of fireworks.";
         },
-        exits: ["car 2", "room 1"],
-        softExits: ["the tracks outside"]
+        exits: ["car 2", "room 1"]
       }),
       "room 1": new Scene({
         description: function() {
           return "This story's *going somewhere*, I promise.";
         },
         exits: ["car 3"],
-        softExits: ["window"],
         objects: {
-          "window": new Window()
+          "window": new Window({
+            description: "There is a window with a latch at the bottom."
+          })
         }
       }),
       "the tracks outside": new Scene({
@@ -178,7 +182,7 @@
           return this.state = "dead";
         }
       }),
-      "window": new Scene({
+      "through the window": new Scene({
         description: function() {
           return "***!?***\n\nOkay. You just ***leapt out of the window***. About half a\nheartbeat after your foot leaves the coping, your spinal cord\ninsists that you *grab something*, something firmly anchored to\nthe ground, far from gnashing teeth and rocky ballast.\n\nBut there is nothing to grab but the fluid air, and your ego\ncalmly watches as your id scrambles to survive. I don't hope to\never learn what you wanted to *achieve* by this. ***You are\ndead***.";
         },
@@ -191,13 +195,25 @@
       wonder: {
         pattern: /wonder/i,
         deed: function(match) {
-          return this.prompt("You think you're so important.");
+          return this.narrate("You think you're so important.");
         }
       },
       when: {
         pattern: /when/i,
         deed: function(match) {
-          return this.prompt("Buy a watch.");
+          return this.narrate("Buy a watch.");
+        }
+      },
+      your: {
+        pattern: /(.*) your (.*?)[.!?]*$/i,
+        deed: function(match) {
+          return this.narrate("" + match[1] + " _whose_ " + match[2] + "?");
+        }
+      },
+      yours: {
+        pattern: /yours?[.!?]*/i,
+        deed: function(match) {
+          return this.narrate("You must be thinking of someone else.");
         }
       }
     },

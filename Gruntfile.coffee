@@ -27,6 +27,9 @@ module.exports = (grunt) ->
       default:
         files:
           "public/js/adventure.js": ["src/lib/marked/lib/marked.js","public/js/adventure.js"]
+      stories:
+        files:
+          "public/tmp.js": ["public/js/adventure.js","public/stories/coast.js"]
     uglify:
       min:
         files:

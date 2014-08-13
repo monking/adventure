@@ -26,17 +26,22 @@ class Window extends Scenery
   constructor: (params) ->
     super params
     @state = (params and params.state) or "closed"
+    @messages =
+      close: (params and params.closeMessage) or "As you press the window closed, the illusion of calm is restored to the room."
+      open: (params and params.openMessage) or "Placing your hands on the window's edge, you feel the warmth of the sunlight in the metal, reminding you of the world this cool careening box is protecting you from. This doesn't prepare you, however, for the sudden noise of the wheels careening down the rails and the scream of the wind that hits you as you slide the window open."
     @actions.open = () ->
       @state = "open"
-      {go:"window"}
+      message: @messages.open
     @actions.close = () ->
       @state = "closed"
-      {message:"The window is now shut."}
+      message: @messages.close
     @actions.go = () ->
       if @state isnt "open"
-        {message:"You have to open the window first."}
+        message:"You lean against the window, looking down to the slope alongside the train. Do you want to open it?"
+        action: -> @go "through the window"
       else
-        {message:"Okay!"}
+        message: "Okay!"
+        action: -> @go "through the window"
 
 new Adventure
   story: () ->
@@ -58,9 +63,6 @@ new Adventure
           count: 1
       exits: [
         "car 2"
-      ]
-      softExits: [
-        "the tracks outside"
       ]
     "car 2": new Scene
       intro: () -> """
@@ -84,9 +86,6 @@ new Adventure
         "car 1"
         "car 3"
       ]
-      softExits: [
-        "the tracks outside"
-      ]
     "car 3": new Scene
       description: () -> """
         You are in **car 3**. The smell is quite noticable here, and reminds
@@ -96,9 +95,6 @@ new Adventure
         "car 2"
         "room 1"
       ]
-      softExits: [
-        "the tracks outside"
-      ]
     "room 1": new Scene
       description: () -> """
         This story's *going somewhere*, I promise.
@@ -106,11 +102,9 @@ new Adventure
       exits: [
         "car 3"
       ]
-      softExits: [
-        "window"
-      ]
       objects:
-        "window": new Window()
+        "window": new Window
+          description: "There is a window with a latch at the bottom."
     "the tracks outside": new Scene
       description: () -> """
         ***What are you thinking?*** This is a *moving train*.
@@ -122,7 +116,7 @@ new Adventure
         """
       event: () ->
         @state = "dead"
-    "window": new Scene
+    "through the window": new Scene
       description: () -> """
         ***!?***
 
@@ -142,11 +136,19 @@ new Adventure
     wonder:
       pattern: /wonder/i
       deed: (match) ->
-        @prompt "You think you're so important."
+        @narrate "You think you're so important."
     when:
       pattern: /when/i
       deed: (match) ->
-        @prompt "Buy a watch."
+        @narrate "Buy a watch."
+    your:
+      pattern: /(.*) your (.*?)[.!?]*$/i
+      deed: (match) ->
+        @narrate "#{match[1]} _whose_ #{match[2]}?"
+    yours:
+      pattern: /yours?[.!?]*/i
+      deed: (match) ->
+        @narrate "You must be thinking of someone else."
   cast:
     "steve": new Cat
       name: "steve"
